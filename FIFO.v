@@ -7,60 +7,55 @@ reg [`PTR_WIDTH-1:0]wt_ptr;
 reg [`PTR_WIDTH-1:0]rd_ptr;
 reg wt_toggle_f;
 reg rd_toggle_f;
-reg wt_ptr_rd_clk;
-reg rd_ptr_wt_clk;
+reg [`PTR_WIDTH-1:0]wt_ptr_rd_clk;
+reg [`PTR_WIDTH-1:0]rd_ptr_wt_clk;
 reg wt_toggle_f_rd_clk;
 reg rd_toggle_f_wt_clk;
 integer i;
 always @(posedge wt_clk)begin
 	if(rst)begin
-		full<=0;
-		overflow<=0;
-		wt_ptr<=0;
-		wt_toggle_f<=0;
-		rd_ptr_wt_clk<=0;
-		rd_toggle_f_wt_clk<=0;
-		for(i=0;i<`FIFO_SIZE-1;i=i+1) fifo[i]=0;
+		full=0;
+		overflow=0;
+		wt_ptr=0;
+		wt_toggle_f=0;
+		rd_ptr_wt_clk=0;
+		rd_toggle_f_wt_clk=0;
+		for(i=0;i<`FIFO_SIZE;i=i+1) fifo[i]=0;
 	end
 	else begin
-		if(wt_en==1)begin
-			if(full==1)
-				overflow<=1;
-			else begin
-				fifo[wt_ptr]<=w_data;
-				if(wt_ptr==`FIFO_SIZE-1)begin
-					wt_ptr<=0;
-					wt_toggle_f<=~wt_toggle_f;
-				end
-				else wt_ptr<=wt_ptr+1;
+		if(wt_en==1 && !full)begin
+			fifo[wt_ptr]<=w_data;
+			overflow<=0;
+			if(wt_ptr==`FIFO_SIZE-1)begin
+				wt_ptr<=0;
+				wt_toggle_f<=~wt_toggle_f;
 			end
+			else wt_ptr<=wt_ptr+1;
 		end
+		else if(wt_en && full) overflow<=1;
 	end
 end
 
 always @(posedge rd_clk)begin
 	if(rst)begin
-		empty<=1;
-		underflow<=0;
-		rd_ptr<=0;
-		rd_toggle_f<=0;
-		wt_ptr_rd_clk<=0;
-		wt_toggle_f_rd_clk<=0;
+		empty=1;
+		underflow=0;
+		rd_ptr=0;
+		rd_toggle_f=0;
+		wt_ptr_rd_clk=0;
+		wt_toggle_f_rd_clk=0;
 	end
 	else begin
-		if(rd_en==1)begin
-			if(empty==1)
-				underflow<=1;
-			else begin
+		if(rd_en==1&& !empty)begin
+			r_data<=fifo[rd_ptr];
 			underflow<=0;
-				r_data<=fifo[rd_ptr];
-				if(rd_ptr==`FIFO_SIZE-1)begin
-					rd_ptr<=0;
-					rd_toggle_f<=~rd_toggle_f;
-				end
-				else rd_ptr<=rd_ptr+1;
+			if(rd_ptr==`FIFO_SIZE-1)begin
+				rd_ptr<=0;
+				rd_toggle_f<=~rd_toggle_f;
 			end
+			else rd_ptr<=rd_ptr+1;
 		end
+		else if(rd_en && empty) underflow<=1;
 	end
 end
 
